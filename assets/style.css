@@ -1,0 +1,161 @@
+/* ─── Dark Industrial Theme ─────────────────────────────────────────── */
+
+:root {
+    --bg-primary: #0a0a1a;
+    --bg-secondary: #0e1117;
+    --bg-card: #1a1a2e;
+    --bg-card-alt: #16213e;
+    --border: #2a2a3e;
+    --accent: #ff6b35;
+    --accent-dim: #cc5528;
+    --text-primary: #e0e0e0;
+    --text-muted: #8888aa;
+    --healthy: #00c853;
+    --impaired: #ffd600;
+    --failing: #ff1744;
+}
+
+/* App background */
+.stApp {
+    background: var(--bg-primary) !important;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background: var(--bg-secondary) !important;
+    border-right: 1px solid var(--border);
+}
+
+section[data-testid="stSidebar"] .stMarkdown h2 {
+    color: var(--accent) !important;
+}
+
+/* ─── Metric cards ─────────────────────────────────────────────────── */
+[data-testid="stMetric"] {
+    background: linear-gradient(135deg, var(--bg-card), var(--bg-card-alt));
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+}
+
+[data-testid="stMetricValue"] {
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+}
+
+[data-testid="stMetricLabel"] {
+    color: var(--text-muted) !important;
+}
+
+/* ─── Buttons ──────────────────────────────────────────────────────── */
+.stButton > button {
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.stButton > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25);
+}
+
+.stButton > button[kind="primary"],
+.stButton > button[data-testid="stBaseButton-primary"] {
+    background-color: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: #fff !important;
+}
+
+.stButton > button[kind="primary"]:hover,
+.stButton > button[data-testid="stBaseButton-primary"]:hover {
+    background-color: var(--accent-dim) !important;
+}
+
+/* ─── DataFrames & Tables ──────────────────────────────────────────── */
+[data-testid="stDataFrame"] {
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+/* ─── Expander ─────────────────────────────────────────────────────── */
+[data-testid="stExpander"] {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+/* ─── Multiselect ──────────────────────────────────────────────────── */
+.stMultiSelect [data-baseweb="tag"] {
+    background-color: var(--accent) !important;
+}
+
+/* ─── Download buttons ─────────────────────────────────────────────── */
+.stDownloadButton > button {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+.stDownloadButton > button:hover {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+}
+
+/* ─── Dividers ─────────────────────────────────────────────────────── */
+hr {
+    border-color: var(--border) !important;
+}
+
+/* ─── Alert banner ─────────────────────────────────────────────────── */
+.stAlert [data-testid="stNotificationContentError"] {
+    background-color: rgba(255, 23, 68, 0.1) !important;
+    border-color: var(--failing) !important;
+}
+
+/* ─── Code blocks ──────────────────────────────────────────────────── */
+code {
+    background-color: var(--bg-card) !important;
+    color: var(--accent) !important;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+/* ─── Plotly charts ────────────────────────────────────────────────── */
+.js-plotly-plot {
+    border-radius: 8px;
+}
+
+/* ─── Scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #3a3a4e;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #4a4a5e;
+}
+
+/* ─── Form ─────────────────────────────────────────────────────────── */
+[data-testid="stForm"] {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+/* ─── Responsive tweaks ────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    [data-testid="stMetricValue"] {
+        font-size: 1.5rem !important;
+    }
+}
