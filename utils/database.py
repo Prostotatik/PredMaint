@@ -5,11 +5,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "maintenance.db")
 
 DEMO_MACHINES = [
-    ("ENG-001", "Motor Assembly Line 1", 1, 15),       # RUL ~128 → Healthy
-    ("ENG-002", "Compressor Unit A", 18, 120),          # RUL ~41  → Impaired
-    ("ENG-003", "Turbine Generator 3", 34, 201),        # RUL ~9   → Failing
-    ("ENG-004", "Pump Station B2", 42, 140),            # RUL ~26  → Impaired
-    ("ENG-005", "Fan Module C1", 76, 202),              # RUL ~13  → Impaired/Alert
+    # For a full run-from-start demo, all machines begin near cycle 1.
+    ("ENG-001", "Motor Assembly Line 1", 1, 1),
+    ("ENG-002", "Compressor Unit A", 18, 1),
+    ("ENG-003", "Turbine Generator 3", 34, 1),
+    ("ENG-004", "Pump Station B2", 42, 1),
+    ("ENG-005", "Fan Module C1", 76, 1),
 ]
 
 

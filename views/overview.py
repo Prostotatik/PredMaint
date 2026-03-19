@@ -4,7 +4,6 @@ import pandas as pd
 from utils.data_loader import get_unit_data, get_max_cycles, SENSOR_NAMES
 from utils.database import get_all_machines
 from utils.calculations import (
-    calculate_rul,
     get_health_status,
     get_health_icon,
     detect_change_points,
@@ -18,8 +17,28 @@ from utils.charts import (
 )
 
 
-def render_overview(test_data, rul_data):
+def _format_seconds(seconds: float) -> str:
+    seconds = max(0.0, float(seconds))
+    if seconds < 60:
+        return f"{seconds:.1f}s"
+    minutes = seconds / 60.0
+    if minutes < 60:
+        return f"{minutes:.1f}min"
+    hours = minutes / 60.0
+    return f"{hours:.1f}h"
+
+
+def render_overview(
+    test_data,
+    rul_data,
+    predictor=None,
+    cycle_delay_sec: float = 0.5,
+):
     st.markdown("## 📊 Global Fleet Overview")
+
+    if predictor is None or not predictor.ready:
+        st.warning("AI model not ready. Train/load it to display RUL and anomalies.")
+        return
 
     machines = get_all_machines()
     if not machines:
@@ -32,15 +51,21 @@ def render_overview(test_data, rul_data):
     anomaly_data = []
 
     for m in machines:
-        rul = calculate_rul(
-            m["unit_number"], m["current_cycle_idx"], test_data, rul_data
-        )
-        status, color = get_health_status(rul)
         unit_data = get_unit_data(
             test_data, m["unit_number"], m["current_cycle_idx"]
         )
-        top_sensors = get_top_contributing_sensors(unit_data)
-        change_pts = detect_change_points(unit_data)
+
+        if len(unit_data) == 0:
+            continue
+
+        # Прогнозим RUL по каждому циклу, чтобы детектор аномалий мог найти
+        # именно момент Healthy -> Impaired по предсказанному health.
+        rul_series = predictor.predict_rul_over_cycles(unit_data)
+        rul = int(round(rul_series[-1])) if rul_series else 0
+
+        status, color = get_health_status(rul)
+        top_sensors = get_top_contributing_sensors(unit_data, predictor)
+        change_pts = detect_change_points(unit_data, rul_sequence=rul_series)
 
         for cp in change_pts:
             anomaly_data.append(
@@ -55,6 +80,7 @@ def render_overview(test_data, rul_data):
             int(unit_data.iloc[-1]["cycle"]) if len(unit_data) > 0 else 0
         )
         max_cyc = get_max_cycles(test_data, m["unit_number"])
+        ttf_seconds = float(rul) * float(cycle_delay_sec)
 
         machines_info.append(
             {
@@ -63,6 +89,7 @@ def render_overview(test_data, rul_data):
                 "unit_number": m["unit_number"],
                 "current_cycle_idx": m["current_cycle_idx"],
                 "rul": rul,
+                "ttf_seconds": ttf_seconds,
                 "status": status,
                 "color": color,
                 "top_sensors": top_sensors,
@@ -112,7 +139,7 @@ def render_overview(test_data, rul_data):
         icon = get_health_icon(m["status"])
         cols[3].markdown(f"{icon} {m['status']}")
         cols[4].markdown(str(m["last_cycle"]))
-        cols[5].markdown(f"**{m['rul']}** cycles")
+        cols[5].markdown(f"**{_format_seconds(m['ttf_seconds'])}**")
         if cols[6].button("🔍", key=f"view_{m['machine_id']}"):
             st.session_state.current_page = "machine_detail"
             st.session_state.selected_machine_id = m["machine_id"]
@@ -123,23 +150,35 @@ def render_overview(test_data, rul_data):
     # ── Charts Row 1: RUL Bar + Health Pie ───────────────────────────────
     col_a, col_b = st.columns(2)
     with col_a:
-        st.plotly_chart(
-            rul_distribution_chart(machines_info), use_container_width=True
+        _ph = st.empty()
+        _ph.plotly_chart(
+            rul_distribution_chart(machines_info),
+            use_container_width=True,
+            key="overview_rul_dist",
         )
     with col_b:
-        st.plotly_chart(
-            fleet_health_pie(machines_info), use_container_width=True
+        _ph = st.empty()
+        _ph.plotly_chart(
+            fleet_health_pie(machines_info),
+            use_container_width=True,
+            key="overview_health_pie",
         )
 
     # ── Charts Row 2: Sensor Trends + Anomaly Timeline ───────────────────
     col_c, col_d = st.columns([3, 2])
     with col_c:
-        st.plotly_chart(
-            fleet_sensor_trends(test_data, machines), use_container_width=True
+        _ph = st.empty()
+        _ph.plotly_chart(
+            fleet_sensor_trends(test_data, machines),
+            use_container_width=True,
+            key="overview_sensor_trends",
         )
     with col_d:
-        st.plotly_chart(
-            anomaly_timeline(anomaly_data), use_container_width=True
+        _ph = st.empty()
+        _ph.plotly_chart(
+            anomaly_timeline(anomaly_data),
+            use_container_width=True,
+            key="overview_anomaly_timeline",
         )
 
     # ── Export ────────────────────────────────────────────────────────────

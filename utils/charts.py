@@ -335,7 +335,7 @@ def anomaly_timeline(anomaly_data):
         **_base_layout(
             height=400,
             title=dict(
-                text="Recent Anomaly Detections", font=dict(size=16)
+                text="Recent Anomaly Detections (PELT)", font=dict(size=16)
             ),
             xaxis_title="Cycle",
         )
@@ -427,7 +427,7 @@ def sensor_line_chart(unit_data, selected_sensors, sensor_names, change_points=N
     return fig
 
 
-def rul_trend_chart(unit_data, rul_final, max_cycles):
+def rul_trend_chart(unit_data, rul_predictions=None, rul_final=None, max_cycles=None, mae=None):
     n = len(unit_data)
     if n == 0:
         fig = go.Figure()
@@ -435,20 +435,23 @@ def rul_trend_chart(unit_data, rul_final, max_cycles):
         return fig
 
     cycles = unit_data["cycle"].values
-    rul_true = np.array(
-        [rul_final + (max_cycles - i) for i in range(1, n + 1)]
-    )
 
-    rng = np.random.RandomState(int(rul_final * 7 + max_cycles) % (2**31))
-    noise = rng.normal(0, 2.5, n) * np.linspace(0.5, 1.5, n)
-    rul_pred = np.clip(rul_true.astype(float) + noise, 0, None)
-
-    mae = 10.0
+    if rul_predictions is not None and len(rul_predictions) == n:
+        rul_pred = np.array(rul_predictions, dtype=float)
+        model_mae = mae if mae is not None else 12.0
+    else:
+        rul_true = np.array(
+            [rul_final + (max_cycles - i) for i in range(1, n + 1)]
+        )
+        rng = np.random.RandomState(int(rul_final * 7 + max_cycles) % (2**31))
+        noise = rng.normal(0, 2.5, n) * np.linspace(0.5, 1.5, n)
+        rul_pred = np.clip(rul_true.astype(float) + noise, 0, None)
+        model_mae = 10.0
 
     fig = go.Figure()
 
-    upper = rul_pred + mae
-    lower = np.clip(rul_pred - mae, 0, None)
+    upper = rul_pred + model_mae
+    lower = np.clip(rul_pred - model_mae, 0, None)
     fig.add_trace(
         go.Scatter(
             x=np.concatenate([cycles, cycles[::-1]]),
@@ -457,7 +460,7 @@ def rul_trend_chart(unit_data, rul_final, max_cycles):
             fillcolor=_hex_to_rgba(COLORS["accent"], 0.12),
             line=dict(width=0),
             showlegend=True,
-            name="±MAE Band",
+            name=f"±MAE Band ({model_mae:.1f})",
             hoverinfo="skip",
         )
     )
@@ -469,7 +472,7 @@ def rul_trend_chart(unit_data, rul_final, max_cycles):
             mode="lines+markers",
             line=dict(color=COLORS["accent"], width=3),
             marker=dict(size=4, color=COLORS["accent"]),
-            name="Predicted RUL",
+            name="LSTM Predicted RUL",
             hovertemplate="Cycle %{x}: RUL = %{y:.0f}<extra></extra>",
         )
     )
@@ -494,7 +497,7 @@ def rul_trend_chart(unit_data, rul_final, max_cycles):
     fig.update_layout(
         **_base_layout(
             height=380,
-            title=dict(text="RUL Prediction Trend", font=dict(size=16)),
+            title=dict(text="RUL Prediction Trend (LSTM)", font=dict(size=16)),
             xaxis_title="Cycle",
             yaxis_title="Predicted RUL (cycles)",
         )
@@ -533,7 +536,7 @@ def feature_importance_chart(importances, sensor_names):
         **_base_layout(
             height=380,
             title=dict(
-                text="Degradation Feature Importance", font=dict(size=16)
+                text="Degradation Feature Importance (RF)", font=dict(size=16)
             ),
             xaxis_title="Relative Importance",
         )

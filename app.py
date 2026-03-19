@@ -11,10 +11,22 @@ from utils.database import (
     advance_all_cycles_by,
     reset_all_cycles,
 )
-from utils.data_loader import load_test_data, load_rul_data, get_available_units
-from utils.calculations import calculate_rul, get_health_status
+from utils.data_loader import (
+    load_test_data,
+    load_train_data,
+    load_rul_data,
+    get_available_units,
+    get_unit_data,
+)
+from utils.calculations import get_health_status
+from models.predictor import RULPredictor
 from views.overview import render_overview
 from views.machine_detail import render_machine_detail
+
+# ── AUTO-SIMULATION SPEED ────────────────────────────────────────────────
+# Сколько секунд в демо соответствует одному "циклу" (current_cycle_idx++)
+DEFAULT_CYCLE_DELAY_SEC = 0.5
+# ─────────────────────────────────────────────────────────────────────────
 
 # ── Page Config (must be first st command) ───────────────────────────────
 st.set_page_config(
@@ -40,6 +52,34 @@ if "current_page" not in st.session_state:
     st.session_state.current_page = "overview"
 if "selected_machine_id" not in st.session_state:
     st.session_state.selected_machine_id = None
+
+
+# ── AI Model Initialization ─────────────────────────────────────────────
+@st.cache_resource(show_spinner=False)
+def get_predictor() -> RULPredictor:
+    predictor = RULPredictor()
+    if predictor.has_saved_models():
+        predictor.load()
+    return predictor
+
+
+predictor = get_predictor()
+
+
+def _train_model():
+    train_data = load_train_data()
+    progress_bar = st.progress(0, text="Training LSTM model...")
+    status_text = st.empty()
+
+    def on_progress(epoch, total, val_rmse):
+        pct = min(epoch / total, 0.95)
+        progress_bar.progress(pct, text=f"Epoch {epoch}/{total} — Val RMSE: {val_rmse:.2f}")
+        status_text.caption(f"Epoch {epoch}/{total} · Validation RMSE: {val_rmse:.2f}")
+
+    predictor.train(train_data, test_data, rul_data, progress_cb=on_progress)
+    progress_bar.progress(1.0, text="Training complete!")
+    status_text.empty()
+    st.cache_resource.clear()
 
 
 # ── Sidebar ──────────────────────────────────────────────────────────────
@@ -87,10 +127,15 @@ with st.sidebar:
         st.caption("No machines yet.")
     for m in machines:
         col_name, col_del = st.columns([5, 1])
-        rul = calculate_rul(
-            m["unit_number"], m["current_cycle_idx"], test_data, rul_data
+        unit_df = get_unit_data(
+            test_data, m["unit_number"], m["current_cycle_idx"]
         )
-        _, color = get_health_status(rul)
+        if predictor.ready and len(unit_df) > 0:
+            rul = int(round(predictor.predict_rul(unit_df)))
+            _, color = get_health_status(rul)
+        else:
+            rul = "—"
+            color = "#666680"
         with col_name:
             st.markdown(
                 f'<span style="font-size:0.85rem">{m["machine_name"]}</span>'
@@ -115,6 +160,31 @@ with st.sidebar:
 
     st.divider()
 
+    # ── Auto-Simulation ──────────────────────────────────────────────────
+    st.markdown("**Auto-Simulation**")
+    c_auto, c_delay = st.columns([2, 1])
+    with c_auto:
+        st.toggle(
+            "🔄 Auto-Simulate",
+            key="auto_simulate",
+            help="Automatically advance all machines by 1 cycle every interval",
+        )
+    with c_delay:
+        st.number_input(
+            "Sec / cycle",
+            min_value=0.05,
+            max_value=10.0,
+            value=float(st.session_state.get("cycle_delay_sec", DEFAULT_CYCLE_DELAY_SEC)),
+            step=0.05,
+            key="cycle_delay_sec",
+        )
+
+    cycle_delay_sec = float(st.session_state.get("cycle_delay_sec", DEFAULT_CYCLE_DELAY_SEC))
+    if st.session_state.get("auto_simulate", False):
+        st.caption(f"⏱️ Running: 1 cycle every {cycle_delay_sec:.2f}s")
+
+    st.divider()
+
     # ── Simulation Controls ──────────────────────────────────────────────
     st.markdown("**Simulation**")
     if st.button(
@@ -135,28 +205,85 @@ with st.sidebar:
             reset_all_cycles()
             st.rerun()
 
+    st.divider()
 
-# ── Alert Banner ─────────────────────────────────────────────────────────
-machines = get_all_machines()
-critical = []
-for m in machines:
-    rul = calculate_rul(
-        m["unit_number"], m["current_cycle_idx"], test_data, rul_data
-    )
-    if rul < 15:
-        critical.append((m["machine_name"], rul))
+    # ── Model Status ─────────────────────────────────────────────────────
+    with st.expander("🤖 AI Model", expanded=True):
+        if predictor.ready:
+            metrics = predictor.get_metrics()
+            st.success("Model loaded ✓")
+            m1, m2 = st.columns(2)
+            m1.metric("LSTM RMSE", f"{metrics.get('lstm_rmse', 0):.2f}")
+            m2.metric("LSTM MAE", f"{metrics.get('lstm_mae', 0):.2f}")
+        else:
+            st.warning("Model not trained yet")
+            if st.button(
+                "🚀 Train AI Model",
+                use_container_width=True,
+                type="primary",
+            ):
+                _train_model()
+                st.rerun()
 
-if critical:
-    parts = ", ".join(f"**{name}** (RUL: {rul})" for name, rul in critical)
-    st.error(
-        f"🚨 CRITICAL ALERT — Machines below 15 cycles RUL: {parts}. "
-        "Immediate inspection required!"
-    )
 
-# ── Main Content ─────────────────────────────────────────────────────────
-if st.session_state.current_page == "machine_detail" and st.session_state.selected_machine_id:
-    render_machine_detail(
-        test_data, rul_data, st.session_state.selected_machine_id
-    )
-else:
-    render_overview(test_data, rul_data)
+# ── Main Content (fragment for flicker-free updates) ─────────────────────
+_auto_on = st.session_state.get("auto_simulate", False)
+cycle_delay_sec = float(st.session_state.get("cycle_delay_sec", DEFAULT_CYCLE_DELAY_SEC))
+
+
+@st.fragment(run_every=cycle_delay_sec if _auto_on else None)
+def _main_content():
+    machines = get_all_machines()
+    critical = []
+    for m in machines:
+        unit_df = get_unit_data(
+            test_data, m["unit_number"], m["current_cycle_idx"]
+        )
+        if predictor.ready and len(unit_df) > 0:
+            rul = int(round(predictor.predict_rul(unit_df)))
+            if rul < 15:
+                critical.append((m["machine_name"], rul))
+
+    if critical:
+        parts = ", ".join(
+            f"**{name}** (RUL: {rul})" for name, rul in critical
+        )
+        st.error(
+            f"🚨 CRITICAL ALERT — Machines below 15 cycles RUL: {parts}. "
+            "Immediate inspection required!"
+        )
+
+    if (
+        st.session_state.current_page == "machine_detail"
+        and st.session_state.selected_machine_id
+    ):
+        render_machine_detail(
+            test_data,
+            rul_data,
+            st.session_state.selected_machine_id,
+            predictor,
+            cycle_delay_sec=cycle_delay_sec,
+        )
+    else:
+        render_overview(
+            test_data,
+            rul_data,
+            predictor,
+            cycle_delay_sec=cycle_delay_sec,
+        )
+
+    if st.session_state.get("auto_simulate", False):
+        _machines = get_all_machines()
+        can_advance = any(
+            m["current_cycle_idx"]
+            < len(test_data[test_data["unit"] == m["unit_number"]])
+            for m in _machines
+        )
+        if can_advance:
+            advance_all_cycles(test_data)
+        else:
+            st.session_state.auto_simulate = False
+            st.rerun()
+
+
+_main_content()

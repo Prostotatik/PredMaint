@@ -47,6 +47,13 @@ def load_test_data(fd="FD001"):
 
 
 @st.cache_data
+def load_train_data(fd="FD001"):
+    path = os.path.join(DATASET_DIR, f"train_{fd}.txt")
+    df = pd.read_csv(path, sep=r"\s+", header=None, names=COLUMN_NAMES)
+    return df
+
+
+@st.cache_data
 def load_rul_data(fd="FD001"):
     path = os.path.join(DATASET_DIR, f"RUL_{fd}.txt")
     df = pd.read_csv(path, header=None, names=["rul"])

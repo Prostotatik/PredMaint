@@ -22,44 +22,100 @@ def get_health_icon(status):
     return {"Healthy": "🟢", "Impaired": "🟡", "Failing": "🔴"}.get(status, "⚪")
 
 
-def detect_change_points(unit_data, sensors=None):
+def detect_change_points(unit_data, sensors=None, rul_sequence=None):
     if sensors is None:
         sensors = ["s_3", "s_7", "s_8", "s_14"]
     available = [s for s in sensors if s in unit_data.columns]
+
+    # Нужен минимальный контекст, чтобы сравнивать с "базовой" зоной
     if not available or len(unit_data) < 15:
         return []
 
-    change_points = []
-    baseline = unit_data[available].iloc[:8]
-    bl_mean = baseline.mean()
-    bl_std = baseline.std().replace(0, 1e-6)
+    raw_signal = unit_data[available].values.astype(np.float64)
+    baseline_len = min(8, max(2, len(raw_signal) // 3))
+    bl_mean = raw_signal[:baseline_len].mean(axis=0)
+    bl_std = raw_signal[:baseline_len].std(axis=0)
+    bl_std = np.where(bl_std < 1e-6, 1e-6, bl_std)
 
-    rolling = unit_data[available].rolling(window=5, min_periods=1).mean()
-    z_scores = ((rolling - bl_mean) / bl_std).abs().mean(axis=1)
+    # Нормируем сенсоры относительно ранней базовой зоны
+    z_signal = (raw_signal - bl_mean) / bl_std
+    z_signal = np.clip(z_signal, -3.0, 3.0)
 
-    for i in range(8, len(z_scores)):
-        if z_scores.iloc[i] > 2.0 and (
-            not change_points or i - change_points[-1]["idx"] > 5
-        ):
-            change_points.append(
-                {
-                    "idx": i,
-                    "cycle": int(unit_data.iloc[i]["cycle"]),
-                    "severity": min(1.0, z_scores.iloc[i] / 5.0),
-                    "z_score": float(z_scores.iloc[i]),
-                }
-            )
+    def _severity_at(bp: int) -> float:
+        before = z_signal[max(0, bp - 5) : bp]
+        after = z_signal[bp : min(len(z_signal), bp + 5)]
+        if len(before) > 0 and len(after) > 0:
+            diff = np.abs(after.mean(axis=0) - before.mean(axis=0))
+            base_std = np.std(z_signal, axis=0).mean()
+            return min(1.0, float(np.mean(diff) / (base_std + 1e-6)))
+        return 0.5
 
-    return change_points
+    # ------------------------------------------------------------------
+    # "Exact moment Healthy -> Impaired"
+    # Если есть ряд предсказанных RUL по каждому циклу (rul_sequence),
+    # то ищем момент переключения health-режима строго по порогам RUL.
+    # ------------------------------------------------------------------
+    if rul_sequence is not None:
+        rul_arr = np.array(rul_sequence, dtype=float).reshape(-1)
+        n = min(len(rul_arr), len(unit_data))
+        if n >= 2:
+            rul_arr = rul_arr[:n]
+            health_labels = [get_health_status(float(r))[0] for r in rul_arr]
+
+            bp = None
+            for i in range(1, n):
+                if health_labels[i - 1] == "Healthy" and health_labels[i] == "Impaired":
+                    bp = i
+                    break
+
+            # Если не нашли именно Healthy->Impaired (например, перескочило в Failing),
+            # берём первую смену с Healthy в любой не-Healthy.
+            if bp is None:
+                for i in range(1, n):
+                    if health_labels[i - 1] == "Healthy" and health_labels[i] != "Healthy":
+                        bp = i
+                        break
+
+            if bp is not None:
+                severity = _severity_at(int(bp))
+                return sorted(
+                    [
+                        {
+                            "idx": int(bp),
+                            "cycle": int(
+                                unit_data.iloc[min(int(bp), len(unit_data) - 1)][
+                                    "cycle"
+                                ]
+                            ),
+                            "severity": severity,
+                            "z_score": severity * 5,
+                        }
+                    ],
+                    key=lambda x: x["idx"],
+                )
+
+    # Если rul_sequence не передан или не удалось найти переход Healthy -> Impaired
+    # — возвращаем пустой список. Это соответствует формулировке хакатона:
+    # детектор аномалий строится вокруг exact moment смены health-режима.
+    return []
 
 
-def calculate_feature_importance(unit_data):
+def calculate_feature_importance(unit_data, predictor=None):
     sensor_cols = [f"s_{i}" for i in range(1, 22)]
-    importances = {}
+
+    if predictor is not None and predictor.ready:
+        imp = predictor.get_feature_importance(unit_data)
+        if imp:
+            full = {c: imp.get(c, 0.0) for c in sensor_cols}
+            total = sum(full.values())
+            if total > 0:
+                return {k: v / total for k, v in full.items()}
+            return full
 
     if len(unit_data) < 5:
         return {c: 0.0 for c in sensor_cols}
 
+    importances = {}
     cycle = np.arange(len(unit_data), dtype=float)
     for col in sensor_cols:
         vals = unit_data[col].values.astype(float)
@@ -73,12 +129,11 @@ def calculate_feature_importance(unit_data):
     total = sum(importances.values())
     if total > 0:
         importances = {k: v / total for k, v in importances.items()}
-
     return importances
 
 
-def get_top_contributing_sensors(unit_data, n=3):
-    importances = calculate_feature_importance(unit_data)
+def get_top_contributing_sensors(unit_data, predictor=None, n=3):
+    importances = calculate_feature_importance(unit_data, predictor)
     return sorted(importances.items(), key=lambda x: x[1], reverse=True)[:n]
 
 

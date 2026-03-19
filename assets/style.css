@@ -72,8 +72,9 @@ section[data-testid="stSidebar"] .stMarkdown h2 {
     background-color: var(--accent-dim) !important;
 }
 
-/* ─── DataFrames & Tables ──────────────────────────────────────────── */
+/* ─── DataFrames & Tables — persistent dark backdrop during re-renders  */
 [data-testid="stDataFrame"] {
+    background: var(--bg-card);
     border-radius: 8px;
     border: 1px solid var(--border);
 }
@@ -121,7 +122,13 @@ code {
     border-radius: 4px;
 }
 
-/* ─── Plotly charts ────────────────────────────────────────────────── */
+/* ─── Plotly charts — persistent dark backdrop during re-renders ───── */
+[data-testid="stPlotlyChart"] {
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
 .js-plotly-plot {
     border-radius: 8px;
 }
@@ -158,4 +165,27 @@ code {
     [data-testid="stMetricValue"] {
         font-size: 1.5rem !important;
     }
+}
+
+/* ─── Sidebar number inputs (e.g. "Sec / cycle") ─────────────────────── */
+section[data-testid="stSidebar"] div[data-testid="stNumberInput"] label,
+section[data-testid="stSidebar"] div[data-testid="stNumberInput"] label span {
+    color: var(--text-muted) !important;
+    opacity: 1 !important;
+    font-weight: 600;
+}
+
+section[data-testid="stSidebar"] div[data-testid="stNumberInput"] input[type="number"],
+section[data-testid="stSidebar"] input[type="number"] {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+    padding: 0 10px !important;
+}
+
+section[data-testid="stSidebar"] div[data-testid="stNumberInput"] input[type="number"]:focus,
+section[data-testid="stSidebar"] input[type="number"]:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.22) !important;
+    outline: none !important;
 }

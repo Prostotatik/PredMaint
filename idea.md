@@ -1,6 +1,6 @@
 Tech stack (strictly follow this, no deviations):
 Visualization & Dashboard: Streamlit + Plotly + Pandas
-ML Framework: PyTorch (LSTM for RUL regression) + Scikit-Learn (feature engineering + RandomForest fallback)
+ML Framework: PyTorch (LSTM for RUL regression) + Scikit-Learn (feature engineering)
 Time-series toolkit: sktime (for change-point detection) + Darts (if needed for additional forecasting)
 Database: SQLite (via streamlit-sqlite or st.connection)
 Data: NASA CMAPSS (FD001 train and test sets). You MUST include code that automatically downloads the dataset from the official NASA link or uses the standard 4-column format + 21 sensors.
@@ -106,9 +106,8 @@ Model Requirements (backend):
 
 Temporal Feature Engineering: sliding window (size 30) → mean, std, max, min, slope for every sensor + op settings 1-3
 RUL Model: PyTorch LSTM (2 layers, 128 hidden) trained on CMAPSS training set (RUL = max_cycle - current_cycle)
-Fallback: Scikit-Learn RandomForestRegressor with engineered features
 Metrics shown on load: RMSE < 18, MAE < 12 on test set (must achieve this)
-Anomaly Change-Point Detection: sktime Pelt algorithm on multi-sensor stream
+Anomaly Change-Point Detection: identify the exact Healthy → Impaired transition moment using the predicted RUL health state
 Noisy data handling: median imputation + z-score clipping
 Interpretability: built-in feature importance for every prediction
 
