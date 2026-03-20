@@ -3,16 +3,16 @@
 <div align="center">
 <br>
 <pre align="center">
-██████╗ ██╗██╗      █████╗  ██████╗ ███████╗
-██╔══██╗██║██║     ██╔══██╗██╔════╝ ██╔════╝
-██████╔╝██║██║     ███████║██║  ███╗█████╗
-██╔══██╗██║██║     ██╔══██║██║   ██║██╔══╝
-██████╔╝██║███████╗██║  ██║╚██████╔╝███████╗
-╚═════╝ ╚═╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
+██████╗ ██████╗ ███████╗██████╗ ███╗   ███╗ █████╗ ██╗███╗   ██╗████████╗
+██╔══██╗██╔══██╗██╔════╝██╔══██╗████╗ ████║██╔══██╗██║████╗  ██║╚══██╔══╝
+██████╔╝██████╔╝█████╗  ██║  ██║██╔████╔██║███████║██║██╔██╗ ██║   ██║   
+██╔═══╝ ██╔══██╗██╔══╝  ██║  ██║██║╚██╔╝██║██╔══██║██║██║╚██╗██║   ██║   
+██║     ██║  ██║███████╗██████╔╝██║ ╚═╝ ██║██║  ██║██║██║ ╚████║   ██║   
+╚═╝     ╚═╝  ╚═╝╚══════╝╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝   ╚═╝   
 </pre>
 **Predictive Maintenance for SMEs**
 <br>
-### RUL · Healthy → Impaired · Cycle-by-cycle simulation · Gemini AI Assistant
+### RUL (LSTM) · Healthy → Impaired → Failed · Cycle-by-cycle simulation · Dashboard insights
 <br>
 </div>
 
@@ -20,7 +20,7 @@
 
 ## 1) Repository Overview
 
-A production-style predictive maintenance demo for SMEs: it estimates **Remaining Useful Life (RUL)** from multivariate time-series, detects the **Healthy → Impaired** transition, and visualizes fleet health with a real-time, cycle-by-cycle simulation.
+A production-style predictive maintenance demo for SMEs: it estimates **Remaining Useful Life (RUL)** from multivariate time-series, detects the **Healthy → Impaired → Failed** transition, and visualizes fleet health with a real-time, cycle-by-cycle simulation.
 
 ### What you get (2-level dashboard)
 
@@ -35,7 +35,7 @@ It also includes:
 
 - **Real-time simulation**: click `Simulate Next Cycle (All)` (or enable `Auto-Simulate`) to advance machines and automatically refresh predictions, charts, and logs.
 - **Exports**: download fleet summary (CSV) and per-machine sensor data + RUL report.
-- **AI assistant (Gemini)**: a floating chat widget that references the live dashboard state (health status, RUL values, and where to inspect).
+- **AI assistant (optional)**: a floating chat widget that references the live dashboard state (health status, LSTM-based RUL values, and where to inspect).
 
 ---
 
@@ -94,7 +94,7 @@ We didn’t stop at “training a model” — we shipped the full loop you need
 | “Exact” health transition timing | `detect_change_points()` uses `rul_sequence` to find the first `Healthy → Impaired` switch, then estimates severity from normalized sensor divergence |
 | Explainability you can show | “Degradation Feature Importance” chart based on sensor ranking |
 | A maintenance log that reads like a plan | “Maintenance Log (simulated)” uses RUL thresholds to output practical actions and reasons |
-| Live system AI assistant | Floating Gemini assistant that answers using the dashboard state snapshot |
+| Live system AI assistant | Optional chat that explains the LSTM-driven predictions using the dashboard snapshot |
 
 ### 📦 Expected Deliverables (What Judges Can Evaluate)
 
@@ -128,7 +128,7 @@ Because it feels like production: a factory manager can add machines, hit “Sim
 
 1. Install dependencies:
    - `pip install -r requirements.txt`
-2. (Optional) Configure Gemini for the AI assistant:
+2. (Optional) Configure the AI assistant (Gemini):
    - set `GEMINI_API_KEY` in your environment (the app also supports `GOOGLE_API_KEY`)
    - if you use a `.env`, keep API keys out of git commits
 3. Start the dashboard:
