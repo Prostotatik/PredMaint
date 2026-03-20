@@ -66,7 +66,7 @@ We didn’t stop at “training a model” — we shipped the full loop you need
 | “Exact” health transition timing | `detect_change_points()` uses `rul_sequence` to find the first `Healthy → Impaired` switch, then estimates severity from normalized sensor divergence |
 | Explainability you can show | “Degradation Feature Importance” chart based on sensor ranking |
 | A maintenance log that reads like a plan | “Maintenance Log (simulated)” uses RUL thresholds to output practical actions and reasons |
-| Live system AI assistant | Floating Gemini assistant that answers in English using the dashboard state snapshot |
+| Live system AI assistant | Floating Gemini assistant that answers using the dashboard state snapshot |
 
 ### 📦 Expected Deliverables (What Judges Can Evaluate)
 
