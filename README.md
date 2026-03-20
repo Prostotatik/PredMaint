@@ -13,7 +13,7 @@ It also includes:
 
 - **Real-time simulation**: click `Simulate Next Cycle (All)` (or enable `Auto-Simulate`) to advance machines and automatically refresh predictions, charts, and logs.
 - **Exports**: download fleet summary (CSV) and per-machine sensor data + RUL report.
-- **AI assistant (Gemini)**: a floating chat widget that answers in English and references the live dashboard state (health status, RUL values, and where to inspect).
+- **AI assistant (Gemini)**: a floating chat widget that references the live dashboard state (health status, RUL values, and where to inspect).
 
 ## Model & signals
 
