@@ -54,10 +54,10 @@ def create_sequences(
         feats = scaler.transform(udf[FEATURE_COLS].values)
         ruls = udf["rul"].values
 
-        # Для единообразия формы входов на обучении используем padding,
-        # чтобы получить последовательность фиксированной длины.
-        # (Сама стабильность раннего поведения дополнительно регулируется
-        # монотонностью на этапе инференса.)
+        # To keep the input shape consistent during training, use padding
+        # to obtain a fixed-length sequence.
+        # (The stability of early behavior is further regulated
+        # via monotonicity during inference.)
         if len(feats) < seq_length:
             pad = np.tile(feats[0], (seq_length - len(feats), 1))
             feats = np.vstack([pad, feats])
@@ -116,8 +116,8 @@ def create_inference_sequence(
     df = clean_data(unit_data)
     feats = scaler.transform(df[FEATURE_COLS].values)
     if len(feats) < seq_length:
-        # Паддим первым фреймом (как в исходной реализации),
-        # чтобы метрики на тест-сете соответствовали обученному распределению.
+        # Pad with the first frame (as in the original implementation),
+        # so that metrics on the test set match the distribution seen during training.
         pad = np.tile(feats[0], (seq_length - len(feats), 1))
         feats = np.vstack([pad, feats])
     return feats[-seq_length:].astype(np.float32)

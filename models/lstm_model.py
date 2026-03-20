@@ -56,7 +56,7 @@ def train_lstm(
         torch.from_numpy(unit_train),
         torch.from_numpy(cycle_train),
     )
-    # Важно: для монотонного штрафа нам нужны соседние по циклу элементы в батче.
+    # Important: for the monotonic penalty we need adjacent cycle elements in the batch.
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=False)
 
     val_X = torch.from_numpy(X_val).to(device)

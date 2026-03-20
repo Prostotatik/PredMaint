@@ -1,13 +1,35 @@
 # Predictive Maintenance Dashboard (NASA CMAPSS)
 
+<div align="center">
+<br>
+<pre align="center">
+██████╗ ██╗██╗      █████╗  ██████╗ ███████╗
+██╔══██╗██║██║     ██╔══██╗██╔════╝ ██╔════╝
+██████╔╝██║██║     ███████║██║  ███╗█████╗
+██╔══██╗██║██║     ██╔══██║██║   ██║██╔══╝
+██████╔╝██║███████╗██║  ██║╚██████╔╝███████╗
+╚═════╝ ╚═╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
+</pre>
+**Predictive Maintenance for SMEs**
+<br>
+### RUL · Healthy → Impaired · Cycle-by-cycle simulation · Gemini AI Assistant
+<br>
+</div>
+
+---
+
+## 1) Repository Overview
+
 A production-style predictive maintenance demo for SMEs: it estimates **Remaining Useful Life (RUL)** from multivariate time-series, detects the **Healthy → Impaired** transition, and visualizes fleet health with a real-time, cycle-by-cycle simulation.
 
-## What it does
+### What you get (2-level dashboard)
 
 The app is an interactive, dark-industrial **Streamlit dashboard** with two levels:
 
-- **Global Overview (main page)**: a fleet table with RUL + health labels, plus charts for RUL distribution, fleet health, real-time sensor trends, and recent anomaly detections.
-- **Individual Machine Drill-down (details page)**: a multi-sensor dashboard (with rolling mean and change-point markers), an LSTM-based RUL trend with an uncertainty band, sensor contribution (feature importance) scores, latest readings, and a simulated maintenance log.
+| Page | What it shows |
+|---|---|
+| **Global Overview** | A fleet table with RUL + health labels, plus charts for RUL distribution, fleet health, real-time sensor trends, and recent anomaly detections. |
+| **Individual Machine Drill-down** | Multi-sensor dashboard (rolling mean + change-point markers), an LSTM-based RUL trend with uncertainty band, sensor contribution (feature importance) scores, latest readings, and a simulated maintenance log. |
 
 It also includes:
 
@@ -15,7 +37,9 @@ It also includes:
 - **Exports**: download fleet summary (CSV) and per-machine sensor data + RUL report.
 - **AI assistant (Gemini)**: a floating chat widget that references the live dashboard state (health status, RUL values, and where to inspect).
 
-## Model & signals
+---
+
+## 2) Model & Signals
 
 - **RUL regression**: a PyTorch **LSTM** model trained on NASA CMAPSS sequences (sequence length `30`) using operational settings + sensor measurements.
 - **Data robustness**: median imputation + z-score clipping for noisy signals.
@@ -24,7 +48,9 @@ It also includes:
 - **Health & change-point detection**: health is derived from predicted RUL thresholds, and the **change-point** is detected around the predicted **Healthy → Impaired** transition.
 - **Interpretability**: a practical, dashboard-friendly sensor contribution ranking (correlation-based scoring).
 
-## Data (NASA CMAPSS)
+---
+
+## 3) Data (NASA CMAPSS)
 
 The dashboard uses the **NASA CMAPSS** dataset in the `dataset/` folder (FD00x).
 Each test trajectory is loaded from standard CMAPSS text files in the repository:
@@ -37,7 +63,9 @@ Each row represents a cycle snapshot with:
 - 3 operational settings (`op_setting_1..3`)
 - 21 sensor measurements (`s_1..s_21`)
 
-## 🧩 Hackathon Story: Predictive Maintenance for SME Resilience
+---
+
+## 4) 🧩 Hackathon Story: Predictive Maintenance for SME Resilience
 
 SMEs cannot afford downtime, and they usually cannot afford “black-box” systems that only a data scientist can operate. So we built something the factory team can actually *drive*: a live dashboard that estimates **Remaining Useful Life (RUL)**, detects the **Healthy → Impaired** transition, and converts that into an actionable maintenance narrative. 🚀🏭
 
@@ -77,19 +105,35 @@ We didn’t stop at “training a model” — we shipped the full loop you need
 | Demonstrable “time-to-failure” | Fleet table + machine page countdowns computed from predicted RUL |
 | Real-world-friendly UX | Dark industrial styling, tables, charts, exports, and “Reset Demo Data” |
 
-## 🧨 Why this is a Hackathon-Ready Demo
+---
+
+## 5) 🧨 Why this is a Hackathon-Ready Demo
 
 Because it feels like production: a factory manager can add machines, hit “Simulate Next Cycle”, see the transition moment, and export a report — without touching a notebook. We turned NASA CMAPSS text trajectories into a complete SME-ready predictive maintenance workflow. 👨‍🔧📈
 
-## Run it
+---
+
+## 6) Tech Stack
+
+| Category | Libraries |
+|---|---|
+| Web dashboard | `streamlit`, `plotly` |
+| Data + math | `pandas`, `numpy`, `scikit-learn`, `joblib` |
+| ML model | `torch` |
+| AI assistant | `google-genai` |
+
+---
+
+## 7) Run it
 
 1. Install dependencies:
    - `pip install -r requirements.txt`
 2. (Optional) Configure Gemini for the AI assistant:
-   - set `GEMINI_API_KEY` in your environment (or update `.env`)
+   - set `GEMINI_API_KEY` in your environment (the app also supports `GOOGLE_API_KEY`)
+   - if you use a `.env`, keep API keys out of git commits
 3. Start the dashboard:
    - `streamlit run app.py`
-4. Train the AI model (if it's not saved locally yet):
+4. Train the AI model (if it isn't saved locally yet):
    - Open the expander `🤖 AI Model` in the app sidebar.
    - The app checks for `models/saved/lstm_model.pth` and `models/saved/scaler.pkl`.
    - If you see `Model not trained yet`, click `🚀 Train AI Model`.

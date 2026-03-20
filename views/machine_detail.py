@@ -217,7 +217,7 @@ def render_machine_detail(
         tail_data = tail_data.reset_index(drop=True)
         tail_data["Predicted RUL"] = [int(round(p)) for p in tail_preds]
     else:
-        # Если предсказания недоступны, не используем ground-truth fallback.
+        # If predictions are not available, don't use the ground-truth fallback.
         tail_data = tail_data.reset_index(drop=True)
         tail_data["Predicted RUL"] = np.full((tail_n,), np.nan)
 

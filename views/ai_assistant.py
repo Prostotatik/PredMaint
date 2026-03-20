@@ -376,8 +376,8 @@ def render_ai_assistant_widget(
     if "ai_chat_draft" not in st.session_state:
         st.session_state.ai_chat_draft = ""
 
-    # NOTE: Важно стилизовать именно контейнер Streamlit по key,
-    # иначе можно получить ситуацию "класс рисуется сверху, но не обнимает компоненты чата".
+    # NOTE: It's important to style the Streamlit container by `key`,
+    # otherwise you may end up with the class drawn on top but not wrapping the chat components.
     st.markdown(
         """
         <style>
@@ -413,7 +413,7 @@ def render_ai_assistant_widget(
             box-shadow: none;
         }
 
-        /* Чат должен прокручиваться внутри карточки */
+        /* The chat should scroll inside the card */
         .st-key-ai_chat_card [data-testid="stChatMessage"] {
             padding-top: 6px;
             padding-bottom: 6px;
@@ -521,7 +521,7 @@ def render_ai_assistant_widget(
                 st.rerun(scope="fragment")
                 return
 
-        # Плейсхолдер под сообщения (обновим после возможной отправки)
+        # Placeholder for messages (we'll update it after a possible send)
         chat_box = st.empty()
 
         st.caption("Questions: chart status, maintenance priorities, and where to look in the UI.")
@@ -546,26 +546,26 @@ def render_ai_assistant_widget(
                 st.session_state.ai_chat_messages.append({"role": "user", "content": user_text})
                 reply_needed = True
                 user_text_for_reply = user_text
-                # В Streamlit нельзя модифицировать session_state ключа,
-                # привязанного к widget'у (`st.text_input(key="ai_chat_draft")`)
-                # после его инстанцирования в рамках одного прохода рендера.
-                # Поэтому не очищаем поле ввода программно.
+                # In Streamlit you can't modify the `session_state` key
+                # that's bound to the widget (`st.text_input(key="ai_chat_draft")`)
+                # after the widget has been instantiated within the same render pass.
+                # That's why we don't clear the input field programmatically.
 
-        # Рендер сообщений (включая только что добавленный ответ)
+        # Render messages (including the just-added reply)
         with chat_box.container():
             with st.container(key="ai_chat_scroll_area"):
                 for msg in st.session_state.ai_chat_messages[-14:]:
                     with st.chat_message(msg["role"]):
                         st.markdown(msg["content"])
 
-                # Показываем "Thinking..." сразу, ещё до долгого запроса.
-                # Так чат не выглядит пустым/пропавшим во время ожидания ответа.
+                # Show "Thinking..." immediately, before the long request completes.
+                # That way, the chat doesn't look empty/missing while waiting for the response.
                 if reply_needed:
                     with st.chat_message("assistant"):
                         assistant_placeholder = st.empty()
                         assistant_placeholder.markdown("Thinking...")
 
-        # Долгий вызов Gemini после того, как UI отрисован.
+        # Long Gemini call after the UI has been rendered.
         if reply_needed and user_text_for_reply:
             snapshot = _build_runtime_snapshot(
                 test_data=test_data,

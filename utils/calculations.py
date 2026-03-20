@@ -27,7 +27,7 @@ def detect_change_points(unit_data, sensors=None, rul_sequence=None):
         sensors = ["s_3", "s_7", "s_8", "s_14"]
     available = [s for s in sensors if s in unit_data.columns]
 
-    # Нужен минимальный контекст, чтобы сравнивать с "базовой" зоной
+    # We need a minimal context window to compare against the "baseline" segment
     if not available or len(unit_data) < 15:
         return []
 
@@ -37,7 +37,7 @@ def detect_change_points(unit_data, sensors=None, rul_sequence=None):
     bl_std = raw_signal[:baseline_len].std(axis=0)
     bl_std = np.where(bl_std < 1e-6, 1e-6, bl_std)
 
-    # Нормируем сенсоры относительно ранней базовой зоны
+    # Normalize sensors relative to an early baseline window
     z_signal = (raw_signal - bl_mean) / bl_std
     z_signal = np.clip(z_signal, -3.0, 3.0)
 
@@ -52,8 +52,8 @@ def detect_change_points(unit_data, sensors=None, rul_sequence=None):
 
     # ------------------------------------------------------------------
     # "Exact moment Healthy -> Impaired"
-    # Если есть ряд предсказанных RUL по каждому циклу (rul_sequence),
-    # то ищем момент переключения health-режима строго по порогам RUL.
+    # If we have a predicted RUL series for each cycle (`rul_sequence`),
+    # then we look for the health-mode switch exactly by the RUL thresholds.
     # ------------------------------------------------------------------
     if rul_sequence is not None:
         rul_arr = np.array(rul_sequence, dtype=float).reshape(-1)
@@ -68,8 +68,8 @@ def detect_change_points(unit_data, sensors=None, rul_sequence=None):
                     bp = i
                     break
 
-            # Если не нашли именно Healthy->Impaired (например, перескочило в Failing),
-            # берём первую смену с Healthy в любой не-Healthy.
+            # If we didn't find the specific Healthy->Impaired transition (e.g., it jumped to Failing),
+            # take the first change from Healthy to any non-Healthy state.
             if bp is None:
                 for i in range(1, n):
                     if health_labels[i - 1] == "Healthy" and health_labels[i] != "Healthy":
@@ -94,9 +94,9 @@ def detect_change_points(unit_data, sensors=None, rul_sequence=None):
                     key=lambda x: x["idx"],
                 )
 
-    # Если rul_sequence не передан или не удалось найти переход Healthy -> Impaired
-    # — возвращаем пустой список. Это соответствует формулировке хакатона:
-    # детектор аномалий строится вокруг exact moment смены health-режима.
+    # If `rul_sequence` wasn't provided or we couldn't find the Healthy -> Impaired transition,
+    # - return an empty list. This matches the hackathon requirement:
+    # - the anomaly detector is built around the exact moment of the health-state change.
     return []
 
 

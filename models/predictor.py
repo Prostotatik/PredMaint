@@ -158,11 +158,11 @@ class RULPredictor:
         if not self.ready or self.scaler is None:
             return []
 
-        # ВАЖНО: для UI нам часто нужно предсказание RUL "по каждому циклу".
-        # Раньше это делалось через predict_rul() для каждого префикса отдельно,
-        # что приводило к N отдельных инференсов LSTM.
+        # IMPORTANT: for the UI we often need the RUL prediction "for each cycle".
+        # Previously this was done via predict_rul() for each prefix separately,
+        # which led to N separate LSTM inference runs.
         #
-        # Оптимизация: делаем один батч инференс по всем окнам длины SEQUENCE_LENGTH.
+        # Optimization: run a single batch inference over all windows of length SEQUENCE_LENGTH.
         if self.lstm_model is not None:
             try:
                 df_clean = clean_data(unit_data)
@@ -176,19 +176,19 @@ class RULPredictor:
 
                 seq_len = SEQUENCE_LENGTH
 
-                # Быстрое построение всех окон:
-                # sequences[i] содержит последовательность длины seq_len,
-                # заканчивающуюся на индексе i (с паддингом повторением feats[0]).
+                # Fast construction of all windows:
+                # sequences[i] contains a seq_len-length sequence,
+                # ending at index i (with padding by repeating feats[0]).
                 idx_i = np.arange(n, dtype=np.int64)[:, None]  # (n,1)
                 idx_j = np.arange(seq_len, dtype=np.int64)[None, :]  # (1,seq_len)
-                # целевые индексы в feats: max(0, i - seq_len + 1 + j)
+                # Target indices in feats: max(0, i - seq_len + 1 + j)
                 idx = np.maximum(0, idx_i - seq_len + 1 + idx_j)  # (n,seq_len)
                 sequences = feats[idx]  # (n, seq_len, feat_dim)
 
                 preds = predict_lstm_batch(self.lstm_model, sequences)
                 preds = np.clip(preds, 0, None)
-                # RUL по определению монотонно НЕ увеличивается с течением циклов.
-                # Копимум-перекосы в начале убираем cumulative min.
+                # By definition, RUL is monotonically NOT increasing over cycles.
+                # Early "cumulative bias" is removed via cumulative min.
                 preds_mono = np.minimum.accumulate(preds)
                 if self.calibrator is not None:
                     preds_mono = self.calibrator.predict(preds_mono)

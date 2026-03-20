@@ -58,8 +58,8 @@ def render_overview(
         if len(unit_data) == 0:
             continue
 
-        # Прогнозим RUL по каждому циклу, чтобы детектор аномалий мог найти
-        # именно момент Healthy -> Impaired по предсказанному health.
+        # Forecast RUL for each cycle so the anomaly detector can find
+        # the exact Healthy -> Impaired moment in the predicted health.
         rul_series = predictor.predict_rul_over_cycles(unit_data)
         rul = int(round(rul_series[-1])) if rul_series else 0
 

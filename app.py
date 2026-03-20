@@ -25,7 +25,7 @@ from views.machine_detail import render_machine_detail
 from views.ai_assistant import render_ai_assistant_widget
 
 # ── AUTO-SIMULATION SPEED ────────────────────────────────────────────────
-# Сколько секунд в демо соответствует одному "циклу" (current_cycle_idx++)
+# How many demo seconds correspond to one "cycle" (current_cycle_idx++)
 DEFAULT_CYCLE_DELAY_SEC = 0.5
 # ─────────────────────────────────────────────────────────────────────────
 
