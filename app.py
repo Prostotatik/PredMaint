@@ -22,6 +22,7 @@ from utils.calculations import get_health_status
 from models.predictor import RULPredictor
 from views.overview import render_overview
 from views.machine_detail import render_machine_detail
+from views.ai_assistant import render_ai_assistant_widget
 
 # ── AUTO-SIMULATION SPEED ────────────────────────────────────────────────
 # Сколько секунд в демо соответствует одному "циклу" (current_cycle_idx++)
@@ -131,7 +132,10 @@ with st.sidebar:
             test_data, m["unit_number"], m["current_cycle_idx"]
         )
         if predictor.ready and len(unit_df) > 0:
-            rul = int(round(predictor.predict_rul(unit_df)))
+            # Keep RUL consistent with `Machine Fleet Status`:
+            # that panel uses `predict_rul_over_cycles()[-1]` (monotonic post-processing).
+            rul_series = predictor.predict_rul_over_cycles(unit_df)
+            rul = int(round(rul_series[-1])) if rul_series else 0
             _, color = get_health_status(rul)
         else:
             rul = "—"
@@ -240,7 +244,8 @@ def _main_content():
             test_data, m["unit_number"], m["current_cycle_idx"]
         )
         if predictor.ready and len(unit_df) > 0:
-            rul = int(round(predictor.predict_rul(unit_df)))
+            rul_series = predictor.predict_rul_over_cycles(unit_df)
+            rul = int(round(rul_series[-1])) if rul_series else 0
             if rul < 15:
                 critical.append((m["machine_name"], rul))
 
@@ -287,3 +292,12 @@ def _main_content():
 
 
 _main_content()
+
+# ── Floating AI Assistant (Gemini 2.5 Flash) ────────────────────────────
+render_ai_assistant_widget(
+    test_data=test_data,
+    predictor=predictor,
+    current_page=st.session_state.current_page,
+    selected_machine_id=st.session_state.selected_machine_id,
+    cycle_delay_sec=cycle_delay_sec,
+)

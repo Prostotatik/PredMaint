@@ -55,6 +55,22 @@ section[data-testid="stSidebar"] .stMarkdown h2 {
     transition: all 0.2s ease;
 }
 
+/* Streamlit renders button labels via [data-testid="stMarkdownContainer"].
+   Force that container to stay centered inside the button across widths/resizes. */
+button[data-testid^="stBaseButton-"] [data-testid="stMarkdownContainer"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    text-align: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+button[data-testid^="stBaseButton-"] [data-testid="stMarkdownContainer"] p {
+    margin: 0 !important;
+}
+
 .stButton > button:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25);

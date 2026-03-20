@@ -143,24 +143,6 @@ def render_machine_detail(
             unsafe_allow_html=True,
         )
 
-    # ── Simulation Controls ──────────────────────────────────────────────
-    st.markdown("")
-    sc1, sc2, sc3, _ = st.columns([1.2, 1.2, 1.2, 3.4])
-    with sc1:
-        if st.button(
-            "▶️ Next Cycle",
-            type="primary",
-            use_container_width=True,
-            key="sim_1",
-        ):
-            advance_cycle(machine_id, max_cycles)
-    with sc2:
-        if st.button("⏩ +10 Cycles", use_container_width=True, key="sim_10"):
-            advance_cycles_by(machine_id, 10, max_cycles)
-    with sc3:
-        if st.button("⏭️ +50 Cycles", use_container_width=True, key="sim_50"):
-            advance_cycles_by(machine_id, 50, max_cycles)
-
     st.markdown("---")
 
     # ── Sensor Selection ─────────────────────────────────────────────────

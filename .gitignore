@@ -1,0 +1,6 @@
+cleanup_disk.py
+gemini_doc.md
+.env
+idea.md
+.venv/
+__pycache__/
